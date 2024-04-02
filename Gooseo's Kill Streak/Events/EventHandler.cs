@@ -1,34 +1,43 @@
 ﻿using Exiled.API.Features;
-using Exiled.CustomItems.API.Features;
 using Exiled.Events.EventArgs.Player;
+using System.Collections.Generic;
 
 namespace gooseoskillstreak.Events
 {
     public class EventHandler
     {
+        public void OnPlayerLeft(LeftEventArgs ev)
+        {
+            var playersSessionVars = ev.Player.SessionVariables;
+
+            if (playersSessionVars.ContainsKey("Kills"))
+                playersSessionVars.Remove("Kills");
+            
+        }
         public void OnPlayerDied(DiedEventArgs ev)
         {
-            if (ev.Attacker == ev.Player || ev.Attacker.IsHost)
+            if (ev.Attacker.IsHost || ev.Player.IsHost)
                 return;
 
-            if (!ev.Player.SessionVariables.ContainsKey("KillStreak"))
-            {
-                ev.Player.SessionVariables.Add("KillStreak", 1);
+            var attackerSessionVars = ev.Attacker.SessionVariables;
+
+            if ((ev.Attacker == ev.Player || ev.DamageHandler.IsSuicide) && attackerSessionVars.ContainsKey("Kills")) {
+                attackerSessionVars.Remove("Kills");
+                return;
             }
-            else
+
+            if (!attackerSessionVars.ContainsKey("Kills"))
             {
-                ev.Player.SessionVariables[ev.Player.RawUserId] = 
-                switch (killstreak[ev.Attacker.Id])
-                {
-                    case 5:
-                        ev.Killer.Broadcast(5, $"<color=red>Du hast eine Killstreak von <color=yellow>{killstreak[ev.Killer.Id]}</color> Kills!</color>" +
-                            $"\n<i><color=#6d04f6>Du bist im Blutrausch!</color></i>", Broadcast.BroadcastFlags.Normal);
-                        break;
-                    case 10:
-                        ev.Killer.Broadcast(5, $"<color=red>Du hast eine Killstreak von <color=yellow>{killstreak[ev.Killer.Id]}</color> Kills!</color>" +
-                            $"\n<i><color=#6d04f6>DOMINATING!</color></i>", Broadcast.BroadcastFlags.Normal);
-                        break;
-                }
+                attackerSessionVars.Add("Kills", 1);
+                return;
+            }
+
+            int kills = attackerSessionVars.TryGetValue("Kills", out object killsObj) ? (int)killsObj + 1 : 1;
+            attackerSessionVars["Kills"] = kills;
+
+            if (kills % 5 == 0)
+            {
+                Map.Broadcast(2, $"<color=red>{ev.Attacker.DisplayNickname}</color> is on a <color=yellow>{kills}</color> kill streak!", default, true);
             }
         }
     }
