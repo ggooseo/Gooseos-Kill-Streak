@@ -16,12 +16,13 @@ namespace gooseoskillstreak.Events
         }
         public void OnPlayerDied(DiedEventArgs ev)
         {
-            if (ev.Attacker.IsHost || ev.Player.IsHost)
+            if (ev.Attacker == null || ev.Attacker.IsHost || ev.Attacker.SessionVariables == null || ev.Player == null)
                 return;
 
             var attackerSessionVars = ev.Attacker.SessionVariables;
 
-            if ((ev.Attacker == ev.Player || ev.DamageHandler.IsSuicide) && attackerSessionVars.ContainsKey("Kills")) {
+            if ((ev.Attacker == ev.Player || ev.DamageHandler.IsSuicide) && attackerSessionVars.ContainsKey("Kills"))
+            {
                 attackerSessionVars.Remove("Kills");
                 return;
             }
@@ -32,12 +33,15 @@ namespace gooseoskillstreak.Events
                 return;
             }
 
-            int kills = attackerSessionVars.TryGetValue("Kills", out object killsObj) ? (int)killsObj + 1 : 1;
-            attackerSessionVars["Kills"] = kills;
-
-            if (kills % 5 == 0)
+            if (attackerSessionVars.TryGetValue("Kills", out object killsObj) && killsObj != null && killsObj is int kills)
             {
-                Map.Broadcast(2, $"<color=red>{ev.Attacker.DisplayNickname}</color> is on a <color=yellow>{kills}</color> kill streak!", default, true);
+                kills++;
+                attackerSessionVars["Kills"] = kills;
+
+                if (kills % 5 == 0)
+                {
+                    Map.Broadcast(2, $"<color=red>{ev.Attacker.DisplayNickname}</color> is on a <color=yellow>{kills}</color> kill streak!", default, true);
+                }
             }
         }
     }
