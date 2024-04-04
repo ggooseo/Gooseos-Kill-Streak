@@ -1,11 +1,23 @@
 ﻿using Exiled.API.Features;
 using Exiled.Events.EventArgs.Player;
-using System.Collections.Generic;
+using Player = Exiled.Events.Handlers.Player;
 
 namespace gooseoskillstreak.Events
 {
     public class EventHandler
     {
+        public EventHandler()
+        {
+            Player.Died += OnPlayerDied;
+            Player.Left += OnPlayerLeft;
+        }
+
+        ~EventHandler()
+        {
+            Player.Died -= OnPlayerDied;
+            Player.Left -= OnPlayerLeft;
+        }
+
         public void OnPlayerLeft(LeftEventArgs ev)
         {
             var playersSessionVars = ev.Player.SessionVariables;
