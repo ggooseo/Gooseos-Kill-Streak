@@ -1,21 +1,23 @@
 ﻿using Exiled.API.Features;
 using Exiled.Events.EventArgs.Player;
-using Player = Exiled.Events.Handlers.Player;
+using PlayerHandler = Exiled.Events.Handlers.Player;
 
 namespace gooseoskillstreak.Events
 {
     public class EventHandler
     {
+        private protected Config config = GooseosKillStreak.Instance.Config;
+
         public EventHandler()
         {
-            Player.Died += OnPlayerDied;
-            Player.Left += OnPlayerLeft;
+            PlayerHandler.Died += OnPlayerDied;
+            PlayerHandler.Left += OnPlayerLeft;
         }
 
         ~EventHandler()
         {
-            Player.Died -= OnPlayerDied;
-            Player.Left -= OnPlayerLeft;
+            PlayerHandler.Died -= OnPlayerDied;
+            PlayerHandler.Left -= OnPlayerLeft;
         }
 
         public void OnPlayerLeft(LeftEventArgs ev)
@@ -28,32 +30,34 @@ namespace gooseoskillstreak.Events
         }
         public void OnPlayerDied(DiedEventArgs ev)
         {
-            if (ev.Attacker == null || ev.Attacker.IsHost || ev.Attacker.SessionVariables == null || ev.Player == null)
+            Player attacker = ev?.Attacker;
+            Player victim = ev?.Player;
+
+            if (victim != null && victim.SessionVariables?.ContainsKey("Kills") == true)
+            {
+                victim.SessionVariables.Remove("Kills");
+            }
+
+            if (attacker == null)
                 return;
 
-            var attackerSessionVars = ev.Attacker.SessionVariables;
-
-            if ((ev.Attacker == ev.Player || ev.DamageHandler.IsSuicide) && attackerSessionVars.ContainsKey("Kills"))
+            if (!attacker.SessionVariables.TryGetValue("Kills", out var killsObj) || !(killsObj is int kills))
             {
-                attackerSessionVars.Remove("Kills");
+                attacker.SessionVariables["Kills"] = 1;
                 return;
             }
 
-            if (!attackerSessionVars.ContainsKey("Kills"))
-            {
-                attackerSessionVars.Add("Kills", 1);
-                return;
-            }
+            kills++;
+            attacker.SessionVariables["Kills"] = kills;
 
-            if (attackerSessionVars.TryGetValue("Kills", out object killsObj) && killsObj != null && killsObj is int kills)
+            if (kills % config.BroadcastEveryAmountKill == 0)
             {
-                kills++;
-                attackerSessionVars["Kills"] = kills;
+                string message = config.KillStreakMessage
+                    .Replace("%attacker%", attacker.DisplayNickname)
+                    .Replace("%victim%", victim.DisplayNickname)
+                    .Replace("%kills%", kills.ToString());
 
-                if (kills % 5 == 0)
-                {
-                    Map.Broadcast(2, $"<color=red>{ev.Attacker.DisplayNickname}</color> is on a <color=yellow>{kills}</color> kill streak!", default, true);
-                }
+                Map.Broadcast(config.BroadcastDuration, message, default, true);
             }
         }
     }
