@@ -13,6 +13,7 @@ namespace gooseoskillstreak.Events
         {
             PlayerHandler.Died += OnPlayerDied;
             PlayerHandler.Left += OnPlayerLeft;
+
         }
 
         ~EventHandler()
@@ -93,4 +94,6 @@ namespace gooseoskillstreak.Events
             }
         }
     }
+
+
 }

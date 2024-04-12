@@ -1,6 +1,6 @@
 ﻿using Exiled.API.Interfaces;
 using System.Collections.Generic;
-
+ 
 namespace gooseoskillstreak
 {
     public class Config : IConfig
